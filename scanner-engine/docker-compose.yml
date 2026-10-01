@@ -1,0 +1,46 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: scanner-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - default
+
+  worker-fast:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_TYPE=FAST
+    depends_on:
+      - redis
+    deploy:
+      replicas: 4
+    restart: unless-stopped
+    networks:
+      - default
+
+  worker-deep:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_TYPE=DEEP
+    depends_on:
+      - redis
+    deploy:
+      replicas: 2
+    restart: unless-stopped
+    networks:
+      - default
+
+networks:
+  default:
+    name: nuclei-dashboard_default
+    external: true

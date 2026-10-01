@@ -1,0 +1,27 @@
+FROM projectdiscovery/nuclei:latest AS nuclei_bin
+
+FROM python:3.11-slim
+
+# Dependensi sistem minimal untuk Nuclei & Git
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Salin binary resmi Nuclei
+COPY --from=nuclei_bin /usr/local/bin/nuclei /usr/local/bin/nuclei
+
+# Unduh dan siapkan template resmi Nuclei pada build stage
+RUN nuclei -update-templates -silent || true
+
+WORKDIR /app
+
+# Pasang dependensi Python murni
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Salin kode program worker
+COPY config.py worker.py ./
+
+CMD ["python", "worker.py"]

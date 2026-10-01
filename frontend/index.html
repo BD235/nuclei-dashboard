@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nuclei Dashboard — Vulnerability Scanner</title>
+  <meta name="description" content="Dashboard pemindaian kerentanan berbasis Nuclei dengan analisis AI Gemini." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-title">
+      <div class="logo-icon">🛡️</div>
+      <div>
+        <div>Nuclei Dashboard</div>
+        <div class="sidebar-logo-sub">v2.0 · Vulnerability Scanner</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Main</div>
+    <a class="nav-item active" id="nav-overview" onclick="switchPage('overview')">
+      <span class="nav-icon">📊</span><span>Overview</span>
+    </a>
+    <a class="nav-item" id="nav-scans" onclick="switchPage('scans')">
+      <span class="nav-icon">🔍</span><span>Scans</span>
+      <span class="nav-badge live" id="badge-running">0</span>
+    </a>
+    <a class="nav-item" id="nav-findings" onclick="switchPage('findings')">
+      <span class="nav-icon">⚠️</span><span>Findings</span>
+      <span class="nav-badge" id="badge-findings">0</span>
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Intelligence</div>
+    <a class="nav-item" id="nav-ai" onclick="switchPage('ai')">
+      <span class="nav-icon">🤖</span><span>AI Analysis</span>
+      <span class="badge badge-ai" style="font-size:9px;padding:1px 5px;margin-left:auto;">Gemini</span>
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Management</div>
+    <a class="nav-item" id="nav-targets" onclick="switchPage('targets')">
+      <span class="nav-icon">🎯</span><span>Targets</span>
+      <span class="nav-badge" id="badge-targets">0</span>
+    </a>
+    <a class="nav-item" id="nav-audit" onclick="switchPage('audit')">
+      <span class="nav-icon">📋</span><span>Audit Logs</span>
+    </a>
+    <a class="nav-item" id="nav-settings" onclick="switchPage('settings')">
+      <span class="nav-icon">⚙️</span><span>Settings</span>
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="api-status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <div>
+        <div style="font-size:11.5px;font-weight:600;color:var(--text-primary)" id="api-status-text">API Connected</div>
+        <div style="font-size:10px;color:var(--text-muted)">localhost:8000</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main-content">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Overview</div>
+      <div class="topbar-subtitle" id="topbar-subtitle">Ringkasan aktivitas keamanan sistem</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" id="btn-open-apikey">🔑 <span id="apikey-label">API Key</span></button>
+      <button class="btn btn-primary" onclick="openNewScanModal()">＋ New Scan</button>
+    </div>
+  </div>
+
+  <div class="content-area">
+
+    <!-- PAGE: OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="stats-grid">
+        <div class="stat-card fade-up">
+          <div class="stat-icon blue">🔍</div>
+          <div><div class="stat-value" id="stat-total-scans">—</div><div class="stat-label">Total Scans</div><div class="stat-sub" id="stat-running-sub">—</div></div>
+        </div>
+        <div class="stat-card fade-up">
+          <div class="stat-icon red">🚨</div>
+          <div><div class="stat-value" id="stat-critical">—</div><div class="stat-label">Critical Findings</div><div class="stat-sub" id="stat-high-sub">—</div></div>
+        </div>
+        <div class="stat-card fade-up">
+          <div class="stat-icon orange">⚠️</div>
+          <div><div class="stat-value" id="stat-total-findings">—</div><div class="stat-label">Total Findings</div><div class="stat-sub" id="stat-completed-sub">—</div></div>
+        </div>
+        <div class="stat-card fade-up">
+          <div class="stat-icon green">🎯</div>
+          <div><div class="stat-value" id="stat-targets">—</div><div class="stat-label">Targets Monitored</div><div class="stat-sub">Dalam allowlist</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Recent Scans</div><div class="card-subtitle">5 scan terbaru</div></div>
+          <button class="btn btn-ghost" onclick="switchPage('scans')">Lihat Semua →</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Target</th><th>Profile</th><th>Status</th><th style="text-align:center">Findings</th><th>Time</th><th>Action</th></tr></thead>
+            <tbody id="overview-recent-tbody"><tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">⏳</div><div>Memuat...</div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: SCANS -->
+    <div class="page" id="page-scans">
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">🚀 New Scan</div><div class="card-subtitle">Mulai pemindaian baru</div></div></div>
+          <div class="card-body">
+            <form id="scan-form">
+              <div class="form-group">
+                <label class="form-label">Target</label>
+                <select id="target-select" class="form-select" required><option value="" disabled selected>Pilih dari allowlist...</option></select>
+                <div class="form-hint" id="selected-target-hint"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Scan Profile</label>
+                <select id="profile" class="form-select"><option value="" disabled selected>Memuat...</option></select>
+              </div>
+              <button type="submit" id="btn-submit" class="btn btn-primary" style="width:100%">🔍 Mulai Scan</button>
+              <div class="form-hint" style="margin-top:10px;text-align:center;">Rate limit: max 10 scan/menit per IP</div>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Profile Details</div></div>
+          <div class="card-body">
+            <div id="profile-details" class="profile-detail-box">
+              <div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Pilih profil untuk melihat detail</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">📜 Scan History</div><div class="card-subtitle">Seluruh riwayat pemindaian</div></div>
+          <button class="btn btn-ghost" id="btn-refresh">🔄 Refresh</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Scan ID</th><th>Target</th><th>Profile</th><th>Status</th><th style="text-align:center">Findings</th><th>Started At</th><th>Actions</th></tr></thead>
+            <tbody id="scans-tbody"><tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">⏳</div><div>Memuat...</div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card findings-panel" id="findings-section">
+        <div class="card-header">
+          <div><div class="card-title">🔎 Vulnerability Findings</div><div class="card-subtitle" id="findings-subtitle"></div></div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ai" id="btn-analyze-findings" onclick="openAiFromFindings()"><span>🤖 Analisis dengan AI</span></button>
+            <button class="btn btn-ghost" id="btn-close-findings">✕</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Severity</th><th>Template ID</th><th>Vulnerability</th><th>Matched At</th></tr></thead>
+            <tbody id="findings-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: FINDINGS -->
+    <div class="page" id="page-findings">
+      <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card"><div class="stat-icon red">🔴</div><div><div class="stat-value" id="all-critical">—</div><div class="stat-label">Critical</div></div></div>
+        <div class="stat-card"><div class="stat-icon orange">🟠</div><div><div class="stat-value" id="all-high">—</div><div class="stat-label">High</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(217,119,6,0.15)">🟡</div><div><div class="stat-value" id="all-medium">—</div><div class="stat-label">Medium</div></div></div>
+        <div class="stat-card"><div class="stat-icon blue">🔵</div><div><div class="stat-value" id="all-low">—</div><div class="stat-label">Low / Info</div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">⚠️ All Findings</div><div class="card-subtitle">Semua temuan dari seluruh scan</div></div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Severity</th><th>Vulnerability</th><th>Template ID</th><th>Target</th><th>Matched At</th></tr></thead>
+            <tbody id="all-findings-tbody"><tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">⏳</div><div>Memuat...</div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: AI -->
+    <div class="page" id="page-ai">
+      <div class="ai-hero">
+        <div class="ai-hero-title">🤖 AI Security Analysis</div>
+        <div class="ai-hero-desc">Analisis mendalam hasil pemindaian Nuclei menggunakan Gemini AI. Pilih hasil scan, masukkan Gemini API Key, dan dapatkan laporan keamanan komprehensif beserta rekomendasi remediasi.</div>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><div class="card-title">🔧 Konfigurasi Analisis</div></div>
+        <div class="card-body">
+          <div class="ai-scan-select-grid">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Pilih Scan untuk Dianalisis</label>
+              <select id="ai-scan-select" class="form-select"><option value="" disabled selected>Pilih scan yang sudah selesai...</option></select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Gemini API Key</label>
+              <input id="ai-gemini-key" type="password" class="form-input form-mono" placeholder="AIzaSy..." />
+              <div class="form-hint">Dapatkan di <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">Google AI Studio</a>. Tidak disimpan di server.</div>
+            </div>
+          </div>
+          <div id="ai-scan-info" style="margin-top:16px;display:none;"></div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="btn btn-ai" id="btn-run-ai" onclick="runAiAnalysis()"><span>✨ Jalankan Analisis AI</span></button>
+            <button class="btn btn-ghost" onclick="clearAiResult()">🗑️ Bersihkan</button>
+          </div>
+        </div>
+      </div>
+      <div id="ai-loading-container" style="display:none;">
+        <div class="card"><div class="card-body"><div class="ai-loading"><div class="ai-spinner"></div><div>Gemini AI sedang menganalisis temuan keamanan...</div><div style="font-size:11.5px;color:var(--text-muted)">Proses ini membutuhkan 10–30 detik</div></div></div></div>
+      </div>
+      <div id="ai-result-container" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">🤖 Hasil Analisis AI</div><div class="card-subtitle" id="ai-result-meta"></div></div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="badge badge-ai">✨ Gemini 2.0 Flash</span>
+              <button class="btn btn-ghost" onclick="copyAiResult()">📋</button>
+            </div>
+          </div>
+          <div class="card-body"><div id="ai-result-body" class="ai-result-content"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: TARGETS -->
+    <div class="page" id="page-targets">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">➕ Tambah Target</div></div>
+          <div class="card-body">
+            <form id="allowlist-form">
+              <div class="form-group">
+                <label class="form-label">Target URL / Host</label>
+                <input id="al-target" type="text" class="form-input form-mono" placeholder="https://target.com atau 192.168.1.1:22" required />
+                <div class="form-hint">Mendukung URL Web/API (http/https) atau Host:Port untuk jaringan</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Label Deskripsi</label>
+                <input id="al-label" type="text" class="form-input" placeholder="OWASP Juice Shop (Training)" />
+              </div>
+              <button type="submit" id="btn-allowlist-submit" class="btn btn-primary" style="width:100%">✅ Simpan ke Allowlist</button>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">🎯 Registered Targets</div><div class="card-subtitle">Target yang diizinkan untuk dipindai</div></div>
+            <button class="btn btn-ghost" id="btn-refresh-allowlist">🔄</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Target</th><th>Label</th><th>Added</th><th></th></tr></thead>
+              <tbody id="allowlist-tbody"><tr><td colspan="4"><div class="empty-state"><div>Memuat...</div></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: AUDIT -->
+    <div class="page" id="page-audit">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">📋 Security Audit Log</div><div class="card-subtitle">Riwayat aktivitas dan kejadian keamanan sistem</div></div>
+          <button class="btn btn-ghost" id="btn-refresh-audit">🔄 Refresh</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Timestamp</th><th>Action</th><th>Target</th><th>Source IP</th><th>Detail</th></tr></thead>
+            <tbody id="audit-tbody"><tr><td colspan="5"><div class="empty-state"><div>Memuat...</div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: SETTINGS -->
+    <div class="page" id="page-settings">
+      <div style="max-width:560px;margin:0 auto;">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header"><div class="card-title">🔑 API Key Configuration</div></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Nuclei Dashboard API Key (X-API-Key)</label>
+              <input id="settings-apikey" type="text" class="form-input form-mono" placeholder="nuclei-secret-key-2024" />
+              <div class="form-hint">Kunci autentikasi untuk scan dan pengelolaan allowlist. Disimpan di localStorage.</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="saveSettings()">💾 Simpan</button>
+              <button class="btn btn-ghost" onclick="resetApiKey()">↩️ Reset Default</button>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header"><div class="card-title">🤖 Gemini AI Key</div></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Gemini API Key</label>
+              <input id="settings-gemini-key" type="password" class="form-input form-mono" placeholder="AIzaSy..." />
+              <div class="form-hint">Dapatkan di <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">Google AI Studio</a>. Disimpan lokal di browser.</div>
+            </div>
+            <button class="btn btn-primary" onclick="saveGeminiKey()">💾 Simpan Gemini Key</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">ℹ️ Informasi Sistem</div></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted)">Backend API</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;">http://localhost:8000</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted)">Frontend</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;">http://localhost:8080</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted)">Scanner</span><span>Nuclei (ProjectDiscovery)</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted)">AI Model</span><span>Gemini 2.0 Flash</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted)">Version</span><span>v2.0</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: NEW SCAN -->
+<div class="modal-overlay" id="modal-new-scan">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">🚀 New Vulnerability Scan</div>
+      <button class="modal-close" onclick="closeModal('modal-new-scan')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Target</label>
+        <select id="modal-target-select" class="form-select" required><option value="" disabled selected>Pilih target dari allowlist...</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scan Profile</label>
+        <select id="modal-profile" class="form-select"><option value="" disabled selected>Pilih profil...</option></select>
+      </div>
+      <div id="modal-profile-details" class="profile-detail-box" style="margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-scan')">Batal</button>
+      <button class="btn btn-primary" onclick="submitModalScan()">🔍 Mulai Scan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: API KEY -->
+<div class="modal-overlay" id="modal-apikey">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">🔑 API Key</div>
+      <button class="modal-close" onclick="closeModal('modal-apikey')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:14px;">Masukkan API Key untuk mengautentikasi operasi scan dan pengelolaan allowlist.</p>
+      <div class="form-group">
+        <label class="form-label">X-API-Key</label>
+        <input id="input-apikey" type="text" class="form-input form-mono" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('input-apikey').value='nuclei-secret-key-2024'">↩️ Reset</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-apikey')">Batal</button>
+      <button class="btn btn-primary" onclick="saveApiKeyFromModal()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+</body>
+</html>

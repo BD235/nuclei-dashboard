@@ -1,0 +1,105 @@
+{
+    "fast_recon": {
+        "name": "Fast Web Recon",
+        "category": "web",
+        "description": "Deteksi cepat teknologi, file sensitif publik, WAF, dan miskonfigurasi ringan",
+        "tags": [
+            "tech",
+            "waf",
+            "exposure",
+            "misconfig"
+        ],
+        "severity": [
+            "info",
+            "low",
+            "medium"
+        ],
+        "rate_limit": 80,
+        "concurrency": 15,
+        "timeout": 4
+    },
+    "web_cve": {
+        "name": "Web Critical & CVE Scan",
+        "category": "web",
+        "description": "Pemindaian terfokus pada kerentanan web kritis (RCE, SQLi, LFI, SSRF, XSS, dan CVE aktif)",
+        "tags": [
+            "cve",
+            "rce",
+            "sqli",
+            "lfi",
+            "ssrf",
+            "xss"
+        ],
+        "severity": [
+            "medium",
+            "high",
+            "critical"
+        ],
+        "rate_limit": 60,
+        "concurrency": 12,
+        "timeout": 5
+    },
+    "api_security": {
+        "name": "API & Microservices Audit",
+        "category": "api",
+        "description": "Audit khusus endpoint REST & GraphQL: Swagger leak, broken auth, token JWT, dan API exposure",
+        "tags": [
+            "api",
+            "swagger",
+            "graphql",
+            "token",
+            "jwt"
+        ],
+        "severity": [
+            "info",
+            "low",
+            "medium",
+            "high",
+            "critical"
+        ],
+        "rate_limit": 60,
+        "concurrency": 12,
+        "timeout": 5
+    },
+    "network_infra": {
+        "name": "Network & Infrastructure Scan",
+        "category": "network",
+        "description": "Pemeriksaan port jaringan terbuka rentan (SSH, FTP, Redis, SMB, Telnet, SSL/TLS weak cipher)",
+        "tags": [
+            "network",
+            "ssl",
+            "default-login"
+        ],
+        "severity": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+        ],
+        "rate_limit": 50,
+        "concurrency": 10,
+        "timeout": 5
+    },
+    "full_audit": {
+        "name": "Full Comprehensive Audit",
+        "category": "all",
+        "description": "Audit multi-vektor lengkap (Web, API, dan Sistem) untuk pengujian menyeluruh",
+        "tags": [
+            "tech",
+            "exposure",
+            "misconfig",
+            "cve",
+            "api",
+            "network"
+        ],
+        "severity": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+        ],
+        "rate_limit": 60,
+        "concurrency": 12,
+        "timeout": 5
+    }
+}
